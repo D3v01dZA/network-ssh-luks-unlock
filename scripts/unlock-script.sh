@@ -17,9 +17,10 @@ Available options:
 -v, --verbose         Print script debug info
 -a, --address         Address of host to unlock
 --port                Port of host to unlock
--u, --user	      User to ssh to
+-u, --user	          User to ssh to
 -i, --identity        SSH identity to use
 -p, --password        Password to unlock with
+-t, --timeout         Timeout to wait on each network connect
 EOF
   exit
 }
@@ -49,8 +50,7 @@ die() {
 
 parse_params() {
   # default values of variables set from params
-  flag=0
-  param=''
+  timeout=10
 
   while :; do
     case "${1-}" in
@@ -71,6 +71,10 @@ parse_params() {
       ;;
     -i | --identity)
       identity="${2-}"
+      shift
+      ;;
+    -t | --timeout)
+      timeout="${2-}"
       shift
       ;;
     --port)
@@ -99,6 +103,15 @@ parse_params "$@"
 setup_colors
 
 msg "Testing if SSH is running"
-nc -zv "${address}" "${port}"
+online=$(nc -zv -G "${timeout}" "${address}" "${port}" &> /dev/null && echo "true" || echo "false")
+if [ "${online}" = "true" ]; then
+  echo "SSH not running"
+  exit 2
+fi
+
 msg "SSH is running, executing cryptunlock"
-ssh "${user}"@"${address}" -i "${identity}" -p "${port}" -t "echo -n ${password} | cryptroot-unlock"
+succeeded=$(ssh "${user}"@"${address}" -i "${identity}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n ${password} | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
+if [ "${succeeded}" = "false" ]; then
+  echo "SSH failed"
+  exit 3
+fi
