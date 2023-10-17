@@ -18,7 +18,7 @@ Available options:
 -a, --address         Address of host to unlock
 --port                Port of host to unlock
 -u, --user	          User to ssh to
--i, --identity        SSH identity to use
+-i, --identity_file   SSH identity to use
 -p, --password        Password to unlock with
 -t, --timeout         Timeout to wait on each network connect
 EOF
@@ -69,8 +69,8 @@ parse_params() {
       address="${2-}"
       shift
       ;;
-    -i | --identity)
-      identity="${2-}"
+    -i | --identity_file)
+      identity_file="${2-}"
       shift
       ;;
     -t | --timeout)
@@ -93,7 +93,7 @@ parse_params() {
   [[ -z "${address-}" ]] && die "Missing required parameter: address"
   [[ -z "${port-}" ]] && die "Missing required parameter: port"
   [[ -z "${user-}" ]] && die "Missing required parameter: user"
-  [[ -z "${identity-}" ]] && die "Missing required parameter: identity"
+  [[ -z "${identity_file-}" ]] && die "Missing required parameter: identity_file"
   [[ -z "${password-}" ]] && die "Missing required parameter: password"
 
   return 0
@@ -103,14 +103,14 @@ parse_params "$@"
 setup_colors
 
 msg "Testing if SSH is running"
-online=$(nc -zv -G "${timeout}" "${address}" "${port}" &> /dev/null && echo "true" || echo "false")
-if [ "${online}" = "true" ]; then
+online=$(nc -zv -w "${timeout}" "${address}" "${port}" &> /dev/null && echo "true" || echo "false")
+if [ "${online}" = "false" ]; then
   echo "SSH not running"
   exit 2
 fi
 
 msg "SSH is running, executing cryptunlock"
-succeeded=$(ssh "${user}"@"${address}" -i "${identity}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n ${password} | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
+succeeded=$(ssh "${user}"@"${address}" -i "${identity_file}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n ${password} | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
 if [ "${succeeded}" = "false" ]; then
   echo "SSH failed"
   exit 3
