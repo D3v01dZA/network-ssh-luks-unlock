@@ -46,14 +46,15 @@ do
             echo " - Healthcheck"
         fi
         /app/unlock-script.sh --address "${ADDRESS}" --port "${PORT}" --user "${USER}" --timeout "${TIMEOUT_TIME}" --identity_file "${IDENTITY_FILE}" --password "$(cat "${FILE}")"
-        if [[ "$?" = "0" ]]; then # 0 means we succesfully unlocked
+        return_code="$?"
+        if [[ "${return_code}" = "0" ]]; then # 0 means we succesfully unlocked
             rm "${FILE}"
         fi
-        if [[ "$?" = "1" ]]; then # 1 means an unknown error so instantly fail the healthcheck
+        if [[ "${return_code}" = "1" ]]; then # 1 means an unknown error so instantly fail the healthcheck
             curl -m 10 -s --retry 5 "${HEALTH_CHECK_URL}/fail"
             echo " - Healthcheck Fail"
         fi
-        if [[ "$?" = "3" ]]; then # 3 means we could ssh but that command failed for whatever reason so instantly fail the health check
+        if [[ "${return_code}" = "3" ]]; then # 3 means we could ssh but that command failed for whatever reason so instantly fail the health check
             curl -m 10 -s --retry 5 "${HEALTH_CHECK_URL}/fail"
             echo " - Healthcheck Fail"
         fi
