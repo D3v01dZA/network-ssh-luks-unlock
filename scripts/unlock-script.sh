@@ -38,7 +38,7 @@ setup_colors() {
 }
 
 msg() {
-  echo >&2 -e "${1-}"
+  echo >&2 -e "$(date) - ${1-}"
 }
 
 die() {
@@ -73,6 +73,10 @@ parse_params() {
       identity_file="${2-}"
       shift
       ;;
+    -k | --known_hosts_file)
+      known_hosts_file="${2-}"
+      shift
+      ;;
     -t | --timeout)
       timeout="${2-}"
       shift
@@ -94,6 +98,7 @@ parse_params() {
   [[ -z "${port-}" ]] && die "Missing required parameter: port"
   [[ -z "${user-}" ]] && die "Missing required parameter: user"
   [[ -z "${identity_file-}" ]] && die "Missing required parameter: identity_file"
+  [[ -z "${known_hosts_file-}" ]] && die "Missing required parameter: known_hosts_file"
   [[ -z "${password-}" ]] && die "Missing required parameter: password"
 
   return 0
@@ -105,12 +110,12 @@ setup_colors
 msg "Testing if SSH is running"
 online=$(nc -zv -w "${timeout}" "${address}" "${port}" &> /dev/null && echo "true" || echo "false")
 if [ "${online}" = "false" ]; then
-  echo "SSH not running"
+  msg "SSH not running"
   exit 2
 fi
 
 msg "SSH is running, executing cryptunlock"
-succeeded=$(ssh "${user}"@"${address}" -i "${identity_file}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n ${password} | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
+succeeded=$(ssh "${user}"@"${address}" -i "${identity_file}" -o UserKnownHostsFile="${known_hosts_file}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n '${password}' | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
 if [ "${succeeded}" = "false" ]; then
   echo "SSH failed"
   exit 3
