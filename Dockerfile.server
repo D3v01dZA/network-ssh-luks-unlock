@@ -1,0 +1,13 @@
+FROM ubuntu:24.04
+
+RUN apt update
+RUN apt install -y netcat-traditional ssh curl jq
+
+WORKDIR /app
+
+ADD scripts/entrypoint-server.sh .
+ADD scripts/unlock-script.sh .
+ADD scripts/replicate-script.sh .
+ADD scripts/server.py .
+
+ENTRYPOINT [ "/app/entrypoint-server.sh" ]
