@@ -35,7 +35,8 @@ while true
 do
     msg "Loop start"
     if [[ -f "${FILE}" ]]; then
-        /app/replicate-script.sh --address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password "$(cat "${FILE}")"
+        # Replicate
+        /app/replicate-script.sh --address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password_file "${FILE}"
         return_code="$?"
         msg "Replicator script ended with return code ${return_code}"
     else

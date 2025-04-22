@@ -17,7 +17,7 @@ Available options:
 -v, --verbose         Print script debug info
 -a, --address         Address of host to replicate to
 -t, --token           Expected token on the server
--p, --password        Password to replicate
+-p, --password_file   Password file to unlock with
 EOF
   exit
 }
@@ -62,8 +62,8 @@ parse_params() {
       token="${2-}"
       shift
       ;;
-    -p | --password)
-      password="${2-}"
+    -p | --password_file)
+      password_file="${2-}"
       shift
       ;;
     -?*) die "Unknown option: $1" ;;
@@ -77,7 +77,7 @@ parse_params() {
   # check required params and arguments
   [[ -z "${address-}" ]] && die "Missing required parameter: address"
   [[ -z "${token-}" ]] && die "Missing required parameter: token"
-  [[ -z "${password-}" ]] && die "Missing required parameter: password"
+  [[ -z "${password_file-}" ]] && die "Missing required parameter: password_file"
 
   return 0
 }
@@ -97,6 +97,7 @@ if [[ "true" = "${exists}" ]]; then
     die "Password exists" 0
 fi
 
+password=$(cat "${password_file}")
 success=$(curl -s -X POST -d "password=${password}" "${address}/password" | jq -r '.success')
 
 if [[ "true" != "${success}" ]]; then

@@ -55,8 +55,10 @@ do
             msg "Healthcheck"
             curl -m 10 -s --retry 5 "${HEALTH_CHECK_URL}" 
         fi
+
+        # Unlock
         msg "Unlock script start"
-        /app/unlock-script.sh --address "${ADDRESS}" --port "${PORT}" --user "${USER}" --timeout "${TIMEOUT_TIME}" --identity_file "${IDENTITY_FILE}" --known_hosts_file "${KNOWN_HOSTS_FILE}" --password "$(cat "${FILE}")"
+        /app/unlock-script.sh --address "${ADDRESS}" --port "${PORT}" --user "${USER}" --timeout "${TIMEOUT_TIME}" --identity_file "${IDENTITY_FILE}" --known_hosts_file "${KNOWN_HOSTS_FILE}" --password_file "${FILE}"
         return_code="$?"
         msg "Unlock script ended with return code ${return_code}"
         if [[ "${return_code}" = "1" ]]; then # 1 means an unknown error so instantly fail the healthcheck
@@ -67,7 +69,9 @@ do
             msg "Healthcheck Fail"
             curl -m 10 -s --retry 5 "${HEALTH_CHECK_URL}/fail"
         fi
-        /app/replicate-script.sh --address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password "$(cat "${FILE}")"
+
+        # Replicate
+        /app/replicate-script.sh --address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password_file "${FILE}"
         return_code="$?"
         msg "Replicator script ended with return code ${return_code}"
     else

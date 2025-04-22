@@ -13,14 +13,15 @@ Script description here.
 
 Available options:
 
--h, --help            Print this help and exit
--v, --verbose         Print script debug info
--a, --address         Address of host to unlock
---port                Port of host to unlock
--u, --user	          User to ssh to
--i, --identity_file   SSH identity to use
--p, --password        Password to unlock with
--t, --timeout         Timeout to wait on each network connect
+-h, --help             Print this help and exit
+-v, --verbose          Print script debug info
+-a, --address          Address of host to unlock
+--port                 Port of host to unlock
+-u, --user	           User to ssh to
+-i, --identity_file    SSH identity to use
+-p, --password_file    Password file to unlock with
+-k, --known_hosts_file Known hosts file to use with ssh
+-t, --timeout          Timeout to wait on each network connect
 EOF
   exit
 }
@@ -57,8 +58,8 @@ parse_params() {
     -h | --help) usage ;;
     -v | --verbose) set -x ;;
     --no-color) NO_COLOR=1 ;;
-    -p | --password)
-      password="${2-}"
+    -p | --password_file)
+      password_file="${2-}"
       shift
       ;;
     -u | --user)
@@ -99,7 +100,7 @@ parse_params() {
   [[ -z "${user-}" ]] && die "Missing required parameter: user"
   [[ -z "${identity_file-}" ]] && die "Missing required parameter: identity_file"
   [[ -z "${known_hosts_file-}" ]] && die "Missing required parameter: known_hosts_file"
-  [[ -z "${password-}" ]] && die "Missing required parameter: password"
+  [[ -z "${password_file-}" ]] && die "Missing required parameter: password_file"
 
   return 0
 }
@@ -110,13 +111,14 @@ setup_colors
 msg "Testing if SSH is running"
 online=$(nc -zv -w "${timeout}" "${address}" "${port}" &> /dev/null && echo "true" || echo "false")
 if [ "${online}" = "false" ]; then
-  msg "SSH not running"
-  exit 2
+  die "SSH not running" 2
 fi
 
 msg "SSH is running, executing cryptunlock"
+password=$(cat "${password_file}")
 succeeded=$(ssh "${user}"@"${address}" -i "${identity_file}" -o UserKnownHostsFile="${known_hosts_file}" -p "${port}" -o "ConnectTimeout=${timeout}" -t "echo -n '${password}' | cryptroot-unlock" &> /dev/null && echo "true" || echo "false")
 if [ "${succeeded}" = "false" ]; then
-  echo "SSH failed"
-  exit 3
+  die "SSH failed" 3
 fi
+
+msg "Successfully unlocked"
