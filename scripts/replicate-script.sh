@@ -98,7 +98,8 @@ if [[ "true" = "${exists}" ]]; then
 fi
 
 password=$(cat "${password_file}")
-success=$(curl -s -X POST -d "password=${password}" "${address}/password" | jq -r '.success')
+encoded_password=$(cat "${password_file}" | jq -sRr @uri)
+success=$(curl -s -X POST -d "password=${encoded_password}" "${address}/password" | jq -r '.success')
 
 if [[ "true" != "${success}" ]]; then
     die "Failed to send password"
