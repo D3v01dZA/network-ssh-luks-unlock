@@ -18,6 +18,7 @@ Available options:
 -a, --address         Address of host to replicate to
 -t, --token           Expected token on the server
 -p, --password_file   Password file to unlock with
+-b, --basic_auth_file Optional file containing user:password for basic auth
 EOF
   exit
 }
@@ -66,6 +67,10 @@ parse_params() {
       password_file="${2-}"
       shift
       ;;
+    -b | --basic_auth_file)
+      basic_auth_file="${2-}"
+      shift
+      ;;
     -?*) die "Unknown option: $1" ;;
     *) break ;;
     esac
@@ -78,20 +83,34 @@ parse_params() {
   [[ -z "${address-}" ]] && die "Missing required parameter: address"
   [[ -z "${token-}" ]] && die "Missing required parameter: token"
   [[ -z "${password_file-}" ]] && die "Missing required parameter: password_file"
+  [[ -n "${basic_auth_file-}" && ! -f "${basic_auth_file}" ]] && die "Basic auth file not found: ${basic_auth_file}"
 
   return 0
+}
+
+# Pass basic auth to curl through a config on stdin so it doesn't show up in ps
+replicator_curl() {
+  if [[ -n "${basic_auth_file-}" ]]; then
+    local credentials
+    credentials=$(cat "${basic_auth_file}")
+    credentials="${credentials//\\/\\\\}"
+    credentials="${credentials//\"/\\\"}"
+    printf 'user = "%s"\n' "${credentials}" | curl -s -K - "$@"
+  else
+    curl -s "$@"
+  fi
 }
 
 parse_params "$@"
 setup_colors
 
-challenge=$(curl -s "${address}/token" | jq -r '.token')
+challenge=$(replicator_curl "${address}/token" | jq -r '.token')
 
 if [[ "${challenge}" != "${token}" ]]; then
     die "Token mismatch"
 fi
 
-exists=$(curl -s "${address}/exists" | jq -r '.exists')
+exists=$(replicator_curl "${address}/exists" | jq -r '.exists')
 
 if [[ "true" = "${exists}" ]]; then
     die "Password exists" 0
@@ -99,7 +118,7 @@ fi
 
 password=$(cat "${password_file}")
 encoded_password=$(cat "${password_file}" | jq -sRr @uri)
-success=$(curl -s -X POST -d "password=${encoded_password}" "${address}/password" | jq -r '.success')
+success=$(replicator_curl -X POST -d "password=${encoded_password}" "${address}/password" | jq -r '.success')
 
 if [[ "true" != "${success}" ]]; then
     die "Failed to send password"

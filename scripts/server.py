@@ -13,21 +13,37 @@ class MyHttpRequestHandler(http.server.BaseHTTPRequestHandler):
 
     def page(self, set):
         text = 'Password Set' if set else 'Password Not Set'
+        status = 'set' if set else 'unset'
         submit = 'Replace' if set else 'Set'
         return f'''
+            <!doctype html>
             <html>
-                <head>Luks Network Unlock</head>
+                <head>
+                    <meta charset="utf-8" />
+                    <meta name="viewport" content="width=device-width, initial-scale=1" />
+                    <title>Luks Network Unlock</title>
+                    <style>
+                        body {{ font-family: system-ui, sans-serif; background: #f2f2f2; color: #222; margin: 0; padding: 16px; }}
+                        main {{ max-width: 360px; margin: 48px auto; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 24px; }}
+                        h1 {{ font-size: 20px; margin: 0 0 16px; }}
+                        .status {{ padding: 8px 12px; border-radius: 4px; margin: 0 0 16px; }}
+                        .set {{ background: #e3f4e5; color: #1d6b2a; }}
+                        .unset {{ background: #fbe9e7; color: #a12a1a; }}
+                        label {{ display: block; margin-bottom: 4px; }}
+                        input[type=password] {{ width: 100%; box-sizing: border-box; padding: 8px; border: 1px solid #bbb; border-radius: 4px; margin-bottom: 16px; }}
+                        input[type=submit] {{ padding: 8px 16px; border: 0; border-radius: 4px; background: #2b5797; color: #fff; cursor: pointer; }}
+                    </style>
+                </head>
                 <body>
-                    <p>{text}</p>
-                    <form method="post" action="/">
-                        <div>
+                    <main>
+                        <h1>Luks Network Unlock</h1>
+                        <p class="status {status}">{text}</p>
+                        <form method="post" action="/">
                             <label for="password">Password</label>
-                            <input name="password" value="" type="password" />
-                        </div>
-                        <div>
+                            <input id="password" name="password" value="" type="password" />
                             <input type="submit" value="{submit}" />
-                        </div>
-                    </form>
+                        </form>
+                    </main>
                 </body>
             </html>
         '''.encode('ascii')

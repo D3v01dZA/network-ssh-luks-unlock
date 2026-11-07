@@ -40,6 +40,12 @@ msg "Identity File: ${IDENTITY_FILE}"
 msg "Known Hosts File: ${KNOWN_HOSTS_FILE}"
 msg "Replicator Address: ${REPLICATOR_ADDRESS}"
 
+REPLICATOR_ARGS=(--address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password_file "${FILE}")
+if [[ -n "${REPLICATOR_BASIC_AUTH_FILE-}" ]]; then
+    msg "Replicator Basic Auth File: ${REPLICATOR_BASIC_AUTH_FILE}"
+    REPLICATOR_ARGS+=(--basic_auth_file "${REPLICATOR_BASIC_AUTH_FILE}")
+fi
+
 echo -n "${OWN_TOKEN}" > "${TOKEN_FILE}"
 
 python3 /app/server.py &
@@ -71,7 +77,7 @@ do
         fi
 
         # Replicate
-        /app/replicate-script.sh --address "${REPLICATOR_ADDRESS}" --token "${REPLICATOR_TOKEN}" --password_file "${FILE}"
+        /app/replicate-script.sh "${REPLICATOR_ARGS[@]}"
         return_code="$?"
         msg "Replicator script ended with return code ${return_code}"
     else
